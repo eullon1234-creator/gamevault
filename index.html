@@ -688,17 +688,10 @@
 
   <!-- TOOLBAR -->
   <div class="toolbar">
-    <select id="filterPlatform" onchange="renderGames()">
-      <option value="">🖥️ Todas as Plataformas</option>
-      <option value="PC">PC</option>
-      <option value="PS5">PS5</option>
-      <option value="PS4">PS4</option>
-      <option value="Xbox Series">Xbox Series</option>
-      <option value="Xbox One">Xbox One</option>
-      <option value="Nintendo Switch">Nintendo Switch</option>
-      <option value="Mobile">Mobile</option>
-      <option value="Outro">Outro</option>
-    </select>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <select id="filterPlatform" onchange="renderGames()"></select>
+      <button class="btn btn-icon btn-sm" onclick="openPlatformManager()" title="Gerenciar Plataformas">⚙️</button>
+    </div>
     <select id="filterGenre" onchange="renderGames()">
       <option value="">🎭 Todos os Gêneros</option>
     </select>
@@ -751,17 +744,7 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Plataforma *</label>
-          <select class="form-control" id="gamePlatform">
-            <option value="">Selecione...</option>
-            <option>PC</option>
-            <option>PS5</option>
-            <option>PS4</option>
-            <option>Xbox Series</option>
-            <option>Xbox One</option>
-            <option>Nintendo Switch</option>
-            <option>Mobile</option>
-            <option>Outro</option>
-          </select>
+          <select class="form-control" id="gamePlatform"></select>
         </div>
         <div class="form-group">
           <label class="form-label">Gênero</label>
@@ -842,6 +825,24 @@
   </div>
 </div>
 
+<!-- PLATFORM MANAGER -->
+<div class="modal-backdrop" id="platformModalBackdrop">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <h2 class="modal-title">⚙️ Gerenciar Plataformas</h2>
+      <button class="modal-close" onclick="closePlatformManager()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="platformList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <input type="text" class="form-control" id="newPlatformName" placeholder="Nome da plataforma" style="flex:1" maxlength="30" />
+        <input type="text" class="form-control" id="newPlatformIcon" placeholder="Ícone" style="width:60px" maxlength="2" />
+        <button class="btn btn-primary" onclick="addPlatform()" title="Adicionar">＋</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -857,10 +858,18 @@ let ratingTouched = false;
 const STORAGE_KEY = 'gamevault_games';
 
 // Platform emoji map
-const PLATFORM_ICONS = {
-  'PC': '🖥️', 'PS5': '🎮', 'PS4': '🎮', 'Xbox Series': '🟢',
-  'Xbox One': '🟢', 'Nintendo Switch': '🔴', 'Mobile': '📱', 'Outro': '🕹️'
-};
+const DEFAULT_PLATFORMS = [
+  { name: 'PC', icon: '🖥️' }, { name: 'PS5', icon: '🎮' }, { name: 'PS4', icon: '🎮' },
+  { name: 'Xbox Series', icon: '🟢' }, { name: 'Xbox One', icon: '🟢' },
+  { name: 'Nintendo Switch', icon: '🔴' }, { name: 'Mobile', icon: '📱' }, { name: 'Outro', icon: '🕹️' }
+];
+
+let platforms = [];
+
+function getPlatformIcon(name) {
+  const p = platforms.find(x => x.name === name);
+  return p ? p.icon : '🕹️';
+}
 
 // ==========================================
 // STORAGE
@@ -878,11 +887,26 @@ function loadData() {
   }
 }
 
+function savePlatforms() {
+  localStorage.setItem('gamevault_platforms', JSON.stringify(platforms));
+}
+
+function loadPlatforms() {
+  try {
+    const raw = localStorage.getItem('gamevault_platforms');
+    platforms = raw ? JSON.parse(raw) : DEFAULT_PLATFORMS.map(p => ({...p}));
+  } catch(e) {
+    platforms = DEFAULT_PLATFORMS.map(p => ({...p}));
+  }
+}
+
 // ==========================================
 // INIT
 // ==========================================
 function init() {
+  loadPlatforms();
   loadData();
+  populatePlatformDropdowns();
   updateDashboard();
   populateGenreFilter();
   renderGames();
@@ -1020,7 +1044,7 @@ function renderGames() {
 // BUILD CARD
 // ==========================================
 function buildCard(g) {
-  const platformIcon = PLATFORM_ICONS[g.platform] || '🕹️';
+  const platformIcon = getPlatformIcon(g.platform);
   const ratingHtml = g.rating > 0
     ? `<span class="rating-num">${g.rating}/10</span>${buildStars(g.rating)}`
     : `<span class="rating-num no-rating">Sem nota</span>`;
@@ -1091,6 +1115,71 @@ function buildStars(rating) {
     ${half ? '<span class="star" style="color:var(--yellow);opacity:.6">★</span>' : ''}
     ${'<span class="star" style="color:var(--border)">★</span>'.repeat(empty)}
   </div>`;
+}
+
+// ==========================================
+// PLATFORM MANAGEMENT
+// ==========================================
+function populatePlatformDropdowns() {
+  const filterSel = document.getElementById('filterPlatform');
+  const formSel = document.getElementById('gamePlatform');
+  filterSel.innerHTML = '<option value="">🖥️ Todas as Plataformas</option>';
+  formSel.innerHTML = '<option value="">Selecione...</option>';
+  platforms.forEach(p => {
+    const opt = `${p.icon} ${p.name}`;
+    filterSel.appendChild(new Option(opt, p.name));
+    formSel.appendChild(new Option(opt, p.name));
+  });
+}
+
+function openPlatformManager() {
+  renderPlatformList();
+  document.getElementById('platformModalBackdrop').classList.add('open');
+}
+
+function closePlatformManager() {
+  document.getElementById('platformModalBackdrop').classList.remove('open');
+  document.getElementById('newPlatformName').value = '';
+  document.getElementById('newPlatformIcon').value = '';
+}
+
+function renderPlatformList() {
+  const list = document.getElementById('platformList');
+  list.innerHTML = platforms.map((p, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg);border-radius:8px;border:1px solid var(--border);">
+      <span><span style="font-size:1.2rem">${p.icon}</span> <strong>${escHtml(p.name)}</strong></span>
+      <button class="btn btn-icon btn-sm" onclick="deletePlatform(${i})" title="Remover" style="color:var(--red)">🗑️</button>
+    </div>
+  `).join('');
+}
+
+function addPlatform() {
+  const name = document.getElementById('newPlatformName').value.trim();
+  const icon = document.getElementById('newPlatformIcon').value.trim() || '🕹️';
+  if (!name) { showToast('⚠️ Digite o nome da plataforma!', 'warning'); return; }
+  if (platforms.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    showToast('⚠️ Plataforma já existe!', 'warning'); return;
+  }
+  platforms.push({ name, icon });
+  savePlatforms();
+  populatePlatformDropdowns();
+  renderPlatformList();
+  document.getElementById('newPlatformName').value = '';
+  document.getElementById('newPlatformIcon').value = '';
+  showToast(`✅ "${name}" adicionada!`, 'success');
+}
+
+function deletePlatform(index) {
+  const p = platforms[index];
+  if (games.some(g => g.platform === p.name)) {
+    showToast(`⚠️ "${p.name}" está em uso por algum jogo. Remova os jogos primeiro.`, 'error');
+    return;
+  }
+  platforms.splice(index, 1);
+  savePlatforms();
+  populatePlatformDropdowns();
+  renderPlatformList();
+  showToast(`🗑️ "${p.name}" removida.`, 'info');
 }
 
 // ==========================================
@@ -1395,6 +1484,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeModal();
     closeConfirm();
+    closePlatformManager();
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
     e.preventDefault();
@@ -1408,6 +1498,9 @@ document.getElementById('modalBackdrop').addEventListener('click', (e) => {
 });
 document.getElementById('confirmBackdrop').addEventListener('click', (e) => {
   if (e.target === document.getElementById('confirmBackdrop')) closeConfirm();
+});
+document.getElementById('platformModalBackdrop').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('platformModalBackdrop')) closePlatformManager();
 });
 
 // ==========================================
