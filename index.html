@@ -314,6 +314,20 @@
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--blue2);
+      background: rgba(37,99,235,.12);
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: background .2s;
+      width: fit-content;
+    }
+    .card-link:hover { background: rgba(37,99,235,.25); }
 
     .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; flex-wrap: wrap; gap: 6px; }
     .complete-btn {
@@ -800,6 +814,12 @@
       </div>
       <div class="form-row">
         <div class="form-group full">
+          <label class="form-label">🔗 Link (YouTube / Site do jogo)</label>
+          <input type="url" class="form-control" id="gameLink" placeholder="https://youtube.com/watch?v=... ou https://..." />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
           <label class="form-label">💬 Comentários / Anotações</label>
           <textarea class="form-control" id="gameComment" placeholder="Suas impressões, dicas, pontos que gostou..."></textarea>
         </div>
@@ -1070,7 +1090,7 @@ function buildCard(g) {
 
   const hoursHtml = g.hours ? `<div class="card-hours">⏱️ ${g.hours}h jogadas</div>` : '';
 
-  const commentHtml = g.comment ? `<div class="card-comment">"${escHtml(g.comment)}"</div>` : '';
+  const linkHtml = g.link ? `<a href="${escHtml(g.link)}" target="_blank" rel="noopener" class="card-link" title="${escHtml(g.link)}">🔗 Link</a>` : '';
 
   const completeBtn = g.status !== 'zerado'
     ? `<button class="complete-btn" onclick="markComplete('${g.id}')">✅ Marcar como Zerado</button>`
@@ -1095,6 +1115,7 @@ function buildCard(g) {
     ${progressHtml}
     ${hoursHtml}
     ${datesHtml ? `<div class="card-dates">${datesHtml}</div>` : ''}
+    ${linkHtml}
     ${commentHtml}
     <div class="card-footer">
       ${completeBtn}
@@ -1222,6 +1243,7 @@ function openModal(id) {
     document.getElementById('gameEndDate').value = g.endDate || '';
     document.getElementById('gameHours').value = g.hours || '';
     document.getElementById('gameProgress').value = g.progress || 0;
+    document.getElementById('gameLink').value = g.link || '';
     document.getElementById('gameComment').value = g.comment || '';
     ratingTouched = g.rating > 0;
     updateRatingDisplay();
@@ -1239,7 +1261,7 @@ function closeModal() {
 }
 
 function clearForm() {
-  ['gameId','gameName','gameGenre','gameStartDate','gameEndDate','gameHours','gameComment'].forEach(id => document.getElementById(id).value = '');
+  ['gameId','gameName','gameGenre','gameStartDate','gameEndDate','gameHours','gameLink','gameComment'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('gamePlatform').value = '';
   document.getElementById('gameStatus').value = currentTab !== 'all' && currentTab !== 'favoritos' ? currentTab : 'lista';
   document.getElementById('gameRating').value = 0;
@@ -1278,6 +1300,7 @@ function saveGame() {
   const endDate = document.getElementById('gameEndDate').value;
   const hours = document.getElementById('gameHours').value;
   const progress = parseInt(document.getElementById('gameProgress').value) || 0;
+  const link = document.getElementById('gameLink').value.trim();
   const comment = document.getElementById('gameComment').value.trim();
 
   if (!name) { showToast('⚠️ Digite o nome do jogo!', 'warning'); document.getElementById('gameName').focus(); return; }
@@ -1288,10 +1311,10 @@ function saveGame() {
   if (editingId) {
     const idx = games.findIndex(g => g.id == editingId);
     if (idx !== -1) {
-      games[idx] = { ...games[idx], name, platform, genre, status, rating, startDate, endDate, hours, progress, comment };
+      games[idx] = { ...games[idx], name, platform, genre, status, rating, startDate, endDate, hours, progress, link, comment };
     }
   } else {
-    games.unshift({ id: Date.now(), name, platform, genre, status, rating, startDate, endDate, hours, progress, comment, favorite: false });
+    games.unshift({ id: Date.now(), name, platform, genre, status, rating, startDate, endDate, hours, progress, link, comment, favorite: false });
   }
 
   saveData();
