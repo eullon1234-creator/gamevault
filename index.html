@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>GameVault — Gerenciador de Jogos</title>
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0d0d14;
+      --bg2:       #13131f;
+      --bg3:       #1a1a2e;
+      --card:      #16213e;
+      --card2:     #1b2a50;
+      --border:    #2a2a4a;
+      --purple:    #7c3aed;
+      --purple2:   #9f5ff7;
+      --blue:      #2563eb;
+      --blue2:     #3b82f6;
+      --neon:      #a855f7;
+      --neon2:     #c084fc;
+      --green:     #10b981;
+      --green2:    #34d399;
+      --yellow:    #f59e0b;
+      --red:       #ef4444;
+      --orange:    #f97316;
+      --text:      #e2e8f0;
+      --text2:     #94a3b8;
+      --text3:     #64748b;
+      --radius:    12px;
+      --radius2:   8px;
+      --shadow:    0 8px 32px rgba(0,0,0,.45);
+      --glow:      0 0 20px rgba(168,85,247,.25);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    input, select, textarea, button { font-family: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    a { text-decoration: none; color: inherit; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg2); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ===== HEADER ===== */
+    header {
+      background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      gap: 16px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -.5px;
+      white-space: nowrap;
+    }
+    .logo span.icon { font-size: 1.6rem; }
+    .logo span.brand { background: linear-gradient(135deg, var(--neon), var(--blue2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-wrap .icon { position: absolute; left: 12px; font-size: 1rem; color: var(--text3); pointer-events: none; }
+    #searchInput {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px 8px 36px;
+      color: var(--text);
+      font-size: .9rem;
+      width: 220px;
+      transition: border-color .2s, width .3s;
+      outline: none;
+    }
+    #searchInput:focus { border-color: var(--neon); width: 260px; }
+    #searchInput::placeholder { color: var(--text3); }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: .875rem;
+      font-weight: 600;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--purple), var(--blue));
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(124,58,237,.4);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,.55); }
+    .btn-outline {
+      border: 1.5px solid var(--border);
+      color: var(--text2);
+    }
+    .btn-outline:hover { border-color: var(--neon); color: var(--neon); }
+    .btn-sm { padding: 5px 10px; font-size: .8rem; }
+    .btn-icon { padding: 7px; border-radius: 7px; }
+
+    /* ===== MAIN LAYOUT ===== */
+    .main-wrap { max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+
+    /* ===== DASHBOARD ===== */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--glow); }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .stat-card.s-purple::before { background: linear-gradient(90deg, var(--purple), var(--neon)); }
+    .stat-card.s-blue::before { background: linear-gradient(90deg, var(--blue), var(--blue2)); }
+    .stat-card.s-green::before { background: linear-gradient(90deg, var(--green), var(--green2)); }
+    .stat-card.s-yellow::before { background: linear-gradient(90deg, var(--yellow), #fbbf24); }
+    .stat-card.s-orange::before { background: linear-gradient(90deg, var(--orange), #fb923c); }
+    .stat-icon { font-size: 1.6rem; }
+    .stat-value { font-size: 1.8rem; font-weight: 800; color: var(--text); }
+    .stat-label { font-size: .78rem; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ===== TABS ===== */
+    .tabs-section { margin-bottom: 20px; }
+    .tabs-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs-row::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      padding: 12px 20px;
+      border-radius: 8px 8px 0 0;
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--text3);
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all .2s;
+      white-space: nowrap;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text2); background: rgba(255,255,255,.03); }
+    .tab-btn.active { color: var(--neon); border-bottom-color: var(--neon); background: rgba(168,85,247,.07); }
+    .tab-badge {
+      background: var(--bg3);
+      color: var(--text3);
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+    .tab-btn.active .tab-badge { background: rgba(168,85,247,.2); color: var(--neon); }
+
+    /* ===== TOOLBAR ===== */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .toolbar select {
+      background: var(--bg2);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      color: var(--text2);
+      font-size: .85rem;
+      outline: none;
+      transition: border-color .2s;
+      cursor: pointer;
+    }
+    .toolbar select:focus { border-color: var(--neon); }
+    .toolbar-spacer { flex: 1; }
+
+    /* ===== GAMES GRID ===== */
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+    }
+    .game-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s;
+      animation: fadeInUp .35s ease both;
+      overflow: hidden;
+    }
+    .game-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.5); border-color: rgba(168,85,247,.3); }
+    .game-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+    .game-card[data-status="zerado"]::before { background: linear-gradient(90deg, var(--green), var(--green2)); }
+    .game-card[data-status="jogando"]::before { background: linear-gradient(90deg, var(--blue), var(--blue2)); }
+    .game-card[data-status="lista"]::before { background: linear-gradient(90deg, var(--purple), var(--neon)); }
+
+    .card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      flex: 1;
+    }
+    .card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .card-actions button {
+      padding: 5px;
+      border-radius: 6px;
+      font-size: .95rem;
+      transition: background .15s, transform .15s;
+      line-height: 1;
+    }
+    .card-actions button:hover { background: rgba(255,255,255,.1); transform: scale(1.15); }
+
+    .card-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 600;
+      letter-spacing: .3px;
+    }
+    .badge-platform { background: rgba(37,99,235,.2); color: var(--blue2); border: 1px solid rgba(37,99,235,.3); }
+    .badge-genre { background: rgba(124,58,237,.2); color: var(--neon2); border: 1px solid rgba(124,58,237,.3); }
+    .badge-status-zerado { background: rgba(16,185,129,.15); color: var(--green2); border: 1px solid rgba(16,185,129,.3); }
+    .badge-status-jogando { background: rgba(37,99,235,.15); color: var(--blue2); border: 1px solid rgba(37,99,235,.3); }
+    .badge-status-lista { background: rgba(124,58,237,.15); color: var(--neon2); border: 1px solid rgba(124,58,237,.3); }
+
+    .card-rating { display: flex; align-items: center; gap: 6px; }
+    .stars { display: flex; gap: 2px; }
+    .star { font-size: .85rem; }
+    .rating-num { font-size: .85rem; font-weight: 700; color: var(--yellow); }
+    .rating-num.no-rating { color: var(--text3); font-weight: 400; }
+
+    .card-dates { font-size: .78rem; color: var(--text3); display: flex; flex-direction: column; gap: 3px; }
+    .card-dates span { display: flex; align-items: center; gap: 5px; }
+
+    .card-progress { display: flex; flex-direction: column; gap: 5px; }
+    .progress-row { display: flex; justify-content: space-between; align-items: center; }
+    .progress-label { font-size: .75rem; color: var(--text3); }
+    .progress-val { font-size: .75rem; font-weight: 700; color: var(--neon2); }
+    .progress-bar-wrap { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--purple), var(--neon)); transition: width .4s ease; }
+
+    .card-hours { font-size: .78rem; color: var(--text3); display: flex; align-items: center; gap: 5px; }
+
+    .card-comment {
+      font-size: .8rem;
+      color: var(--text2);
+      line-height: 1.5;
+      border-left: 2px solid var(--border);
+      padding-left: 10px;
+      font-style: italic;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; flex-wrap: wrap; gap: 6px; }
+    .complete-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: .78rem;
+      font-weight: 600;
+      background: rgba(16,185,129,.15);
+      color: var(--green2);
+      border: 1px solid rgba(16,185,129,.3);
+      transition: all .2s;
+    }
+    .complete-btn:hover { background: rgba(16,185,129,.3); transform: translateY(-1px); }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .empty-icon { font-size: 4rem; opacity: .4; }
+    .empty-title { font-size: 1.1rem; font-weight: 700; color: var(--text2); }
+    .empty-sub { font-size: .85rem; color: var(--text3); }
+
+    /* ===== MODAL ===== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.75);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s;
+      backdrop-filter: blur(4px);
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+      transform: translateY(20px) scale(.97);
+      transition: transform .25s cubic-bezier(.4,0,.2,1);
+    }
+    .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+    .modal-header {
+      padding: 24px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title { font-size: 1.15rem; font-weight: 800; color: var(--text); }
+    .modal-close {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      color: var(--text3);
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s, color .2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.08); color: var(--text); }
+    .modal-body { padding: 20px 24px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1/-1; }
+    .form-label { font-size: .8rem; font-weight: 600; color: var(--text2); letter-spacing: .3px; text-transform: uppercase; }
+    .form-control {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: .9rem;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+    }
+    .form-control:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(168,85,247,.12); }
+    .form-control::placeholder { color: var(--text3); }
+    textarea.form-control { resize: vertical; min-height: 80px; }
+    select.form-control { cursor: pointer; }
+    select.form-control option { background: var(--bg2); }
+
+    .range-wrap { display: flex; align-items: center; gap: 12px; }
+    .range-wrap input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    .range-wrap input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--neon);
+      box-shadow: 0 0 8px rgba(168,85,247,.5);
+      cursor: pointer;
+    }
+    .range-val {
+      width: 40px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--neon);
+    }
+
+    .modal-footer {
+      padding: 0 24px 24px;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-cancel { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+    .btn-cancel:hover { background: var(--border); }
+    .btn-save { background: linear-gradient(135deg, var(--purple), var(--blue)); color: #fff; box-shadow: 0 4px 14px rgba(124,58,237,.4); }
+    .btn-save:hover { box-shadow: 0 6px 20px rgba(124,58,237,.55); transform: translateY(-1px); }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .875rem;
+      font-weight: 500;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      animation: slideInRight .3s ease both;
+      min-width: 240px;
+      max-width: 340px;
+      pointer-events: all;
+    }
+    .toast.removing { animation: slideOutRight .3s ease both; }
+    .toast-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .toast-success { border-left: 3px solid var(--green); }
+    .toast-info { border-left: 3px solid var(--blue2); }
+    .toast-warning { border-left: 3px solid var(--yellow); }
+    .toast-error { border-left: 3px solid var(--red); }
+
+    /* ===== CONFIRM DIALOG ===== */
+    .confirm-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .confirm-backdrop.open { opacity: 1; pointer-events: all; }
+    .confirm-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transform: scale(.95);
+      transition: transform .2s;
+    }
+    .confirm-backdrop.open .confirm-box { transform: scale(1); }
+    .confirm-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .confirm-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 8px; }
+    .confirm-msg { font-size: .875rem; color: var(--text2); margin-bottom: 22px; line-height: 1.5; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-danger:hover { background: #dc2626; }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideOutRight {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(30px); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .6; }
+    }
+    @keyframes completePop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      header { padding: 0 14px; }
+      .header-inner { height: auto; padding: 10px 0; flex-wrap: wrap; }
+      .logo { font-size: 1.1rem; }
+      #searchInput { width: 160px; }
+      #searchInput:focus { width: 180px; }
+      .main-wrap { padding: 16px 12px; }
+      .dashboard { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .stat-card { padding: 14px; }
+      .stat-value { font-size: 1.4rem; }
+      .games-grid { grid-template-columns: 1fr; gap: 12px; }
+      .form-row { grid-template-columns: 1fr; }
+      .modal { border-radius: 12px; }
+      .btn { padding: 7px 12px; font-size: .82rem; }
+      .tab-btn { padding: 10px 14px; font-size: .83rem; }
+    }
+    @media (max-width: 480px) {
+      .dashboard { grid-template-columns: 1fr 1fr; }
+      .header-actions { width: 100%; }
+      #searchInput { flex: 1; width: auto; }
+      #searchInput:focus { width: auto; }
+      .search-wrap { flex: 1; }
+    }
+
+    /* ===== FAVORITE STAR ===== */
+    .fav-btn { color: var(--text3); transition: color .2s, transform .2s; }
+    .fav-btn.active { color: var(--yellow); }
+    .fav-btn:hover { transform: scale(1.2); }
+
+    /* ===== SECTION TITLE ===== */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .count-pill {
+      background: rgba(168,85,247,.15);
+      color: var(--neon2);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+
+    /* ===== IMPORT/EXPORT PANEL ===== */
+    .io-panel {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .io-panel input[type="file"] { display: none; }
+
+    /* ===== PLATFORM ICONS MAP ===== */
+    .platform-icon { margin-right: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="icon">🎮</span>
+      <span class="brand">GameVault</span>
+    </div>
+    <div class="header-actions">
+      <div class="search-wrap">
+        <span class="icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar jogo..." oninput="renderGames()" />
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">
+        <span>＋</span> Adicionar Jogo
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main-wrap">
+
+  <!-- DASHBOARD -->
+  <div class="dashboard">
+    <div class="stat-card s-green">
+      <div class="stat-icon">🏆</div>
+      <div class="stat-value" id="statZerados">0</div>
+      <div class="stat-label">Zerados</div>
+    </div>
+    <div class="stat-card s-blue">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-value" id="statJogando">0</div>
+      <div class="stat-label">Jogando</div>
+    </div>
+    <div class="stat-card s-purple">
+      <div class="stat-icon">📋</div>
+      <div class="stat-value" id="statLista">0</div>
+      <div class="stat-label">Lista de Desejos</div>
+    </div>
+    <div class="stat-card s-yellow">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-value" id="statMedia">—</div>
+      <div class="stat-label">Média de Nota</div>
+    </div>
+    <div class="stat-card s-orange">
+      <div class="stat-icon">⏱️</div>
+      <div class="stat-value" id="statHoras">0h</div>
+      <div class="stat-label">Horas Jogadas</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-section">
+    <div class="tabs-row">
+      <button class="tab-btn active" data-tab="all" onclick="switchTab('all', this)">
+        🗂️ Todos <span class="tab-badge" id="badgeAll">0</span>
+      </button>
+      <button class="tab-btn" data-tab="jogando" onclick="switchTab('jogando', this)">
+        🎯 Jogando <span class="tab-badge" id="badgeJogando">0</span>
+      </button>
+      <button class="tab-btn" data-tab="zerado" onclick="switchTab('zerado', this)">
+        🏆 Zerados <span class="tab-badge" id="badgeZerado">0</span>
+      </button>
+      <button class="tab-btn" data-tab="lista" onclick="switchTab('lista', this)">
+        📋 Lista de Desejos <span class="tab-badge" id="badgeLista">0</span>
+      </button>
+      <button class="tab-btn" data-tab="favoritos" onclick="switchTab('favoritos', this)">
+        ⭐ Favoritos <span class="tab-badge" id="badgeFavoritos">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <select id="filterPlatform" onchange="renderGames()">
+      <option value="">🖥️ Todas as Plataformas</option>
+      <option value="PC">PC</option>
+      <option value="PS5">PS5</option>
+      <option value="PS4">PS4</option>
+      <option value="Xbox Series">Xbox Series</option>
+      <option value="Xbox One">Xbox One</option>
+      <option value="Nintendo Switch">Nintendo Switch</option>
+      <option value="Mobile">Mobile</option>
+      <option value="Outro">Outro</option>
+    </select>
+    <select id="filterGenre" onchange="renderGames()">
+      <option value="">🎭 Todos os Gêneros</option>
+    </select>
+    <select id="sortBy" onchange="renderGames()">
+      <option value="recent">🕒 Mais Recentes</option>
+      <option value="name">🔤 Nome A–Z</option>
+      <option value="rating_desc">⭐ Maior Nota</option>
+      <option value="rating_asc">📉 Menor Nota</option>
+      <option value="hours_desc">⏱️ Mais Horas</option>
+    </select>
+    <div class="toolbar-spacer"></div>
+    <div class="io-panel">
+      <button class="btn btn-outline btn-sm" onclick="exportJSON()" title="Exportar JSON">📤 Exportar</button>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer" title="Importar JSON">
+        📥 Importar
+        <input type="file" id="importFile" accept=".json" onchange="importJSON(event)" />
+      </label>
+    </div>
+  </div>
+
+  <!-- SECTION HEADER -->
+  <div class="section-header">
+    <div class="section-title">
+      <span id="sectionIcon">🗂️</span>
+      <span id="sectionLabel">Todos os Jogos</span>
+    </div>
+    <div class="count-pill" id="countPill">0 jogos</div>
+  </div>
+
+  <!-- GAMES GRID -->
+  <div class="games-grid" id="gamesGrid"></div>
+
+</main>
+
+<!-- MODAL: FORM -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modalTitle">Adicionar Jogo</h2>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="gameId" />
+      <div class="form-row">
+        <div class="form-group full">
+          <label class="form-label">Nome do Jogo *</label>
+          <input type="text" class="form-control" id="gameName" placeholder="Ex: Elden Ring" maxlength="100" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Plataforma *</label>
+          <select class="form-control" id="gamePlatform">
+            <option value="">Selecione...</option>
+            <option>PC</option>
+            <option>PS5</option>
+            <option>PS4</option>
+            <option>Xbox Series</option>
+            <option>Xbox One</option>
+            <option>Nintendo Switch</option>
+            <option>Mobile</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gênero</label>
+          <input type="text" class="form-control" id="gameGenre" placeholder="Ex: RPG, FPS, Aventura..." list="genreList" maxlength="40" />
+          <datalist id="genreList">
+            <option value="RPG"></option><option value="FPS"></option><option value="Ação"></option>
+            <option value="Aventura"></option><option value="Plataforma"></option><option value="Estratégia"></option>
+            <option value="Simulação"></option><option value="Terror"></option><option value="Esportes"></option>
+            <option value="Luta"></option><option value="Puzzle"></option><option value="MMORPG"></option>
+            <option value="Battle Royale"></option><option value="Indie"></option><option value="Mundo Aberto"></option>
+          </datalist>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Status *</label>
+          <select class="form-control" id="gameStatus" onchange="toggleStatusFields()">
+            <option value="lista">📋 Lista de Desejos</option>
+            <option value="jogando">🎯 Jogando</option>
+            <option value="zerado">🏆 Zerado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nota (0–10)</label>
+          <div class="range-wrap">
+            <input type="range" id="gameRating" min="0" max="10" step="0.5" value="0" oninput="updateRatingDisplay()" />
+            <span class="range-val" id="ratingDisplay">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" id="dateStartGroup">
+          <label class="form-label">Data de Início</label>
+          <input type="date" class="form-control" id="gameStartDate" />
+        </div>
+        <div class="form-group" id="dateEndGroup">
+          <label class="form-label">Data de Término</label>
+          <input type="date" class="form-control" id="gameEndDate" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">⏱️ Horas Jogadas</label>
+          <input type="number" class="form-control" id="gameHours" placeholder="Ex: 42" min="0" max="9999" step="0.5" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">📊 Progresso (%)</label>
+          <div class="range-wrap">
+            <input type="range" id="gameProgress" min="0" max="100" step="5" value="0" oninput="updateProgressDisplay()" />
+            <span class="range-val" id="progressDisplay" style="color:var(--neon2);font-size:.9rem;">0%</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label class="form-label">💬 Comentários / Anotações</label>
+          <textarea class="form-control" id="gameComment" placeholder="Suas impressões, dicas, pontos que gostou..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-save" onclick="saveGame()">💾 Salvar Jogo</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-backdrop" id="confirmBackdrop">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Remover Jogo?</div>
+    <div class="confirm-msg" id="confirmMsg">Tem certeza que deseja remover este jogo? Esta ação não pode ser desfeita.</div>
+    <div class="confirm-btns">
+      <button class="btn btn-cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Remover</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ==========================================
+// DATA & STATE
+// ==========================================
+let games = [];
+let currentTab = 'all';
+let editingId = null;
+let ratingTouched = false;
+
+const STORAGE_KEY = 'gamevault_games';
+
+// Platform emoji map
+const PLATFORM_ICONS = {
+  'PC': '🖥️', 'PS5': '🎮', 'PS4': '🎮', 'Xbox Series': '🟢',
+  'Xbox One': '🟢', 'Nintendo Switch': '🔴', 'Mobile': '📱', 'Outro': '🕹️'
+};
+
+// ==========================================
+// STORAGE
+// ==========================================
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    games = raw ? JSON.parse(raw) : [];
+  } catch(e) {
+    games = [];
+  }
+}
+
+// ==========================================
+// INIT
+// ==========================================
+function init() {
+  loadData();
+  updateDashboard();
+  populateGenreFilter();
+  renderGames();
+}
+
+// ==========================================
+// DASHBOARD
+// ==========================================
+function updateDashboard() {
+  const zerados = games.filter(g => g.status === 'zerado').length;
+  const jogando = games.filter(g => g.status === 'jogando').length;
+  const lista = games.filter(g => g.status === 'lista').length;
+  const favs = games.filter(g => g.favorite).length;
+
+  const rated = games.filter(g => g.rating > 0);
+  const media = rated.length ? (rated.reduce((s, g) => s + g.rating, 0) / rated.length).toFixed(1) : '—';
+  const horas = games.reduce((s, g) => s + (parseFloat(g.hours) || 0), 0);
+
+  document.getElementById('statZerados').textContent = zerados;
+  document.getElementById('statJogando').textContent = jogando;
+  document.getElementById('statLista').textContent = lista;
+  document.getElementById('statMedia').textContent = media;
+  document.getElementById('statHoras').textContent = horas >= 1000 ? (horas/1000).toFixed(1)+'k' : horas + 'h';
+
+  document.getElementById('badgeAll').textContent = games.length;
+  document.getElementById('badgeJogando').textContent = jogando;
+  document.getElementById('badgeZerado').textContent = zerados;
+  document.getElementById('badgeLista').textContent = lista;
+  document.getElementById('badgeFavoritos').textContent = favs;
+}
+
+// ==========================================
+// GENRE FILTER POPULATE
+// ==========================================
+function populateGenreFilter() {
+  const genres = [...new Set(games.map(g => g.genre).filter(Boolean))].sort();
+  const sel = document.getElementById('filterGenre');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">🎭 Todos os Gêneros</option>';
+  genres.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g;
+    sel.appendChild(o);
+  });
+  if (genres.includes(current)) sel.value = current;
+}
+
+// ==========================================
+// TAB SWITCH
+// ==========================================
+function switchTab(tab, btn) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const labels = {
+    all: ['🗂️', 'Todos os Jogos'],
+    jogando: ['🎯', 'Jogando Agora'],
+    zerado: ['🏆', 'Jogos Zerados'],
+    lista: ['📋', 'Lista de Desejos'],
+    favoritos: ['⭐', 'Favoritos']
+  };
+  document.getElementById('sectionIcon').textContent = labels[tab][0];
+  document.getElementById('sectionLabel').textContent = labels[tab][1];
+  renderGames();
+}
+
+// ==========================================
+// FILTER & SORT
+// ==========================================
+function getFiltered() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const platform = document.getElementById('filterPlatform').value;
+  const genre = document.getElementById('filterGenre').value;
+  const sort = document.getElementById('sortBy').value;
+
+  let list = [...games];
+
+  // Tab filter
+  if (currentTab !== 'all') {
+    if (currentTab === 'favoritos') list = list.filter(g => g.favorite);
+    else list = list.filter(g => g.status === currentTab);
+  }
+
+  // Search
+  if (search) list = list.filter(g => g.name.toLowerCase().includes(search) || (g.comment || '').toLowerCase().includes(search) || (g.genre || '').toLowerCase().includes(search));
+
+  // Platform
+  if (platform) list = list.filter(g => g.platform === platform);
+
+  // Genre
+  if (genre) list = list.filter(g => g.genre === genre);
+
+  // Sort
+  list.sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name);
+    if (sort === 'rating_desc') return (b.rating || 0) - (a.rating || 0);
+    if (sort === 'rating_asc') return (a.rating || 0) - (b.rating || 0);
+    if (sort === 'hours_desc') return (parseFloat(b.hours) || 0) - (parseFloat(a.hours) || 0);
+    return (b.id || 0) - (a.id || 0); // recent
+  });
+
+  return list;
+}
+
+// ==========================================
+// RENDER GAMES
+// ==========================================
+function renderGames() {
+  const grid = document.getElementById('gamesGrid');
+  const list = getFiltered();
+
+  document.getElementById('countPill').textContent = `${list.length} jogo${list.length !== 1 ? 's' : ''}`;
+
+  if (!list.length) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🎮</div>
+        <div class="empty-title">Nenhum jogo encontrado</div>
+        <div class="empty-sub">Tente ajustar os filtros ou adicione um novo jogo!</div>
+        <button class="btn btn-primary" onclick="openModal()" style="margin-top:12px">＋ Adicionar Jogo</button>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(g => buildCard(g)).join('');
+
+  // Animate new cards
+  grid.querySelectorAll('.game-card').forEach((c, i) => {
+    c.style.animationDelay = `${i * 40}ms`;
+  });
+}
+
+// ==========================================
+// BUILD CARD
+// ==========================================
+function buildCard(g) {
+  const platformIcon = PLATFORM_ICONS[g.platform] || '🕹️';
+  const ratingHtml = g.rating > 0
+    ? `<span class="rating-num">${g.rating}/10</span>${buildStars(g.rating)}`
+    : `<span class="rating-num no-rating">Sem nota</span>`;
+
+  const statusBadgeClass = `badge-status-${g.status}`;
+  const statusLabel = { zerado: '🏆 Zerado', jogando: '🎯 Jogando', lista: '📋 Lista' }[g.status];
+
+  const datesHtml = [
+    g.startDate ? `<span>📅 Início: ${formatDate(g.startDate)}</span>` : '',
+    g.endDate ? `<span>✅ Fim: ${formatDate(g.endDate)}</span>` : ''
+  ].filter(Boolean).join('');
+
+  const progressHtml = g.progress > 0 ? `
+    <div class="card-progress">
+      <div class="progress-row">
+        <span class="progress-label">📊 Progresso</span>
+        <span class="progress-val">${g.progress}%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" style="width:${g.progress}%"></div>
+      </div>
+    </div>` : '';
+
+  const hoursHtml = g.hours ? `<div class="card-hours">⏱️ ${g.hours}h jogadas</div>` : '';
+
+  const commentHtml = g.comment ? `<div class="card-comment">"${escHtml(g.comment)}"</div>` : '';
+
+  const completeBtn = g.status !== 'zerado'
+    ? `<button class="complete-btn" onclick="markComplete('${g.id}')">✅ Marcar como Zerado</button>`
+    : '';
+
+  return `
+  <div class="game-card" data-status="${g.status}" data-id="${g.id}">
+    <div class="card-header">
+      <div class="card-title">${escHtml(g.name)}</div>
+      <div class="card-actions">
+        <button class="fav-btn ${g.favorite ? 'active' : ''}" onclick="toggleFav('${g.id}')" title="Favorito">⭐</button>
+        <button onclick="openModal('${g.id}')" title="Editar">✏️</button>
+        <button onclick="confirmDelete('${g.id}')" title="Remover">🗑️</button>
+      </div>
+    </div>
+    <div class="card-badges">
+      ${g.platform ? `<span class="badge badge-platform">${platformIcon} ${escHtml(g.platform)}</span>` : ''}
+      ${g.genre ? `<span class="badge badge-genre">${escHtml(g.genre)}</span>` : ''}
+      <span class="badge ${statusBadgeClass}">${statusLabel}</span>
+    </div>
+    <div class="card-rating">${ratingHtml}</div>
+    ${progressHtml}
+    ${hoursHtml}
+    ${datesHtml ? `<div class="card-dates">${datesHtml}</div>` : ''}
+    ${commentHtml}
+    <div class="card-footer">
+      ${completeBtn}
+      <span style="font-size:.72rem;color:var(--text3);margin-left:auto">#${String(g.id).slice(-4)}</span>
+    </div>
+  </div>`;
+}
+
+// ==========================================
+// BUILD STARS
+// ==========================================
+function buildStars(rating) {
+  const full = Math.floor(rating / 2);
+  const half = (rating % 2) >= 1 ? 1 : 0;
+  const empty = 5 - full - half;
+  return `<div class="stars">
+    ${'<span class="star" style="color:var(--yellow)">★</span>'.repeat(full)}
+    ${half ? '<span class="star" style="color:var(--yellow);opacity:.6">★</span>' : ''}
+    ${'<span class="star" style="color:var(--border)">★</span>'.repeat(empty)}
+  </div>`;
+}
+
+// ==========================================
+// FORMAT DATE
+// ==========================================
+function formatDate(str) {
+  if (!str) return '';
+  const [y, m, d] = str.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ==========================================
+// ESCAPE HTML
+// ==========================================
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ==========================================
+// MODAL
+// ==========================================
+function openModal(id) {
+  editingId = id || null;
+  ratingTouched = false;
+  const modal = document.getElementById('modalBackdrop');
+  document.getElementById('modalTitle').textContent = id ? '✏️ Editar Jogo' : '＋ Adicionar Jogo';
+
+  clearForm();
+
+  if (id) {
+    const g = games.find(x => x.id == id);
+    if (!g) return;
+    document.getElementById('gameId').value = g.id;
+    document.getElementById('gameName').value = g.name;
+    document.getElementById('gamePlatform').value = g.platform || '';
+    document.getElementById('gameGenre').value = g.genre || '';
+    document.getElementById('gameStatus').value = g.status;
+    document.getElementById('gameRating').value = g.rating || 0;
+    document.getElementById('gameStartDate').value = g.startDate || '';
+    document.getElementById('gameEndDate').value = g.endDate || '';
+    document.getElementById('gameHours').value = g.hours || '';
+    document.getElementById('gameProgress').value = g.progress || 0;
+    document.getElementById('gameComment').value = g.comment || '';
+    ratingTouched = g.rating > 0;
+    updateRatingDisplay();
+    updateProgressDisplay();
+    toggleStatusFields();
+  }
+
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('gameName').focus(), 300);
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  editingId = null;
+}
+
+function clearForm() {
+  ['gameId','gameName','gameGenre','gameStartDate','gameEndDate','gameHours','gameComment'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('gamePlatform').value = '';
+  document.getElementById('gameStatus').value = currentTab !== 'all' && currentTab !== 'favoritos' ? currentTab : 'lista';
+  document.getElementById('gameRating').value = 0;
+  document.getElementById('gameProgress').value = 0;
+  document.getElementById('ratingDisplay').textContent = '—';
+  document.getElementById('progressDisplay').textContent = '0%';
+  toggleStatusFields();
+}
+
+function updateRatingDisplay() {
+  ratingTouched = true;
+  const val = parseFloat(document.getElementById('gameRating').value);
+  document.getElementById('ratingDisplay').textContent = val > 0 ? val : '—';
+}
+
+function updateProgressDisplay() {
+  const val = document.getElementById('gameProgress').value;
+  document.getElementById('progressDisplay').textContent = val + '%';
+}
+
+function toggleStatusFields() {
+  const status = document.getElementById('gameStatus').value;
+  document.getElementById('dateEndGroup').style.opacity = status === 'zerado' ? '1' : '.5';
+}
+
+// ==========================================
+// SAVE GAME
+// ==========================================
+function saveGame() {
+  const name = document.getElementById('gameName').value.trim();
+  const platform = document.getElementById('gamePlatform').value;
+  const genre = document.getElementById('gameGenre').value.trim();
+  const status = document.getElementById('gameStatus').value;
+  const rating = ratingTouched ? parseFloat(document.getElementById('gameRating').value) : 0;
+  const startDate = document.getElementById('gameStartDate').value;
+  const endDate = document.getElementById('gameEndDate').value;
+  const hours = document.getElementById('gameHours').value;
+  const progress = parseInt(document.getElementById('gameProgress').value) || 0;
+  const comment = document.getElementById('gameComment').value.trim();
+
+  if (!name) { showToast('⚠️ Digite o nome do jogo!', 'warning'); document.getElementById('gameName').focus(); return; }
+  if (!platform) { showToast('⚠️ Selecione a plataforma!', 'warning'); return; }
+
+  const isNew = !editingId;
+
+  if (editingId) {
+    const idx = games.findIndex(g => g.id == editingId);
+    if (idx !== -1) {
+      games[idx] = { ...games[idx], name, platform, genre, status, rating, startDate, endDate, hours, progress, comment };
+    }
+  } else {
+    games.unshift({ id: Date.now(), name, platform, genre, status, rating, startDate, endDate, hours, progress, comment, favorite: false });
+  }
+
+  saveData();
+  updateDashboard();
+  populateGenreFilter();
+  renderGames();
+  closeModal();
+  showToast(isNew ? `🎮 "${name}" adicionado!` : `✅ "${name}" atualizado!`, 'success');
+}
+
+// ==========================================
+// DELETE
+// ==========================================
+let pendingDeleteId = null;
+
+function confirmDelete(id) {
+  pendingDeleteId = id;
+  const g = games.find(x => x.id == id);
+  document.getElementById('confirmMsg').textContent = `Tem certeza que deseja remover "${g?.name}"? Esta ação não pode ser desfeita.`;
+  document.getElementById('confirmBackdrop').classList.add('open');
+  document.getElementById('confirmOkBtn').onclick = () => {
+    deleteGame(pendingDeleteId);
+    closeConfirm();
+  };
+}
+
+function closeConfirm() {
+  document.getElementById('confirmBackdrop').classList.remove('open');
+  pendingDeleteId = null;
+}
+
+function deleteGame(id) {
+  const g = games.find(x => x.id == id);
+  const name = g?.name || 'Jogo';
+
+  // Animate out
+  const card = document.querySelector(`.game-card[data-id="${id}"]`);
+  if (card) {
+    card.style.transition = 'all .3s ease';
+    card.style.transform = 'scale(.9) translateY(-10px)';
+    card.style.opacity = '0';
+    setTimeout(() => {
+      games = games.filter(x => x.id != id);
+      saveData();
+      updateDashboard();
+      populateGenreFilter();
+      renderGames();
+    }, 300);
+  } else {
+    games = games.filter(x => x.id != id);
+    saveData();
+    updateDashboard();
+    populateGenreFilter();
+    renderGames();
+  }
+  showToast(`🗑️ "${name}" removido.`, 'info');
+}
+
+// ==========================================
+// TOGGLE FAVORITE
+// ==========================================
+function toggleFav(id) {
+  const g = games.find(x => x.id == id);
+  if (!g) return;
+  g.favorite = !g.favorite;
+  saveData();
+  updateDashboard();
+  renderGames();
+  showToast(g.favorite ? `⭐ "${g.name}" favoritado!` : `✨ Favorito removido.`, 'info');
+}
+
+// ==========================================
+// MARK AS COMPLETE
+// ==========================================
+function markComplete(id) {
+  const g = games.find(x => x.id == id);
+  if (!g) return;
+  const prevStatus = g.status;
+  g.status = 'zerado';
+  g.progress = 100;
+  if (!g.endDate) g.endDate = new Date().toISOString().split('T')[0];
+
+  // Pop animation
+  const card = document.querySelector(`.game-card[data-id="${id}"]`);
+  if (card) {
+    card.style.animation = 'completePop .4s ease';
+  }
+
+  saveData();
+  setTimeout(() => {
+    updateDashboard();
+    renderGames();
+    showToast(`🏆 "${g.name}" marcado como Zerado! Parabéns!`, 'success');
+    // Confetti-like visual
+    launchConfetti();
+  }, 400);
+}
+
+// ==========================================
+// CONFETTI (lightweight)
+// ==========================================
+function launchConfetti() {
+  const colors = ['#a855f7','#3b82f6','#10b981','#f59e0b','#ef4444'];
+  const container = document.body;
+  for (let i = 0; i < 30; i++) {
+    const el = document.createElement('div');
+    const size = Math.random() * 8 + 4;
+    el.style.cssText = `
+      position:fixed;
+      width:${size}px;height:${size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      left:${Math.random()*100}vw;
+      top:-10px;
+      opacity:1;
+      z-index:9999;
+      pointer-events:none;
+      transition:none;
+    `;
+    container.appendChild(el);
+    const duration = Math.random() * 1200 + 800;
+    const endY = Math.random() * 60 + 40;
+    el.animate([
+      { transform: `translateY(0) rotate(0deg)`, opacity: 1 },
+      { transform: `translateY(${endY}vh) rotate(${Math.random()*720-360}deg)`, opacity: 0 }
+    ], { duration, easing: 'ease-in', fill: 'forwards' }).onfinish = () => el.remove();
+  }
+}
+
+// ==========================================
+// TOAST
+// ==========================================
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  const icons = { success: '✅', info: 'ℹ️', warning: '⚠️', error: '❌' };
+  toast.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('removing');
+    toast.addEventListener('animationend', () => toast.remove());
+  }, 3500);
+}
+
+// ==========================================
+// EXPORT JSON
+// ==========================================
+function exportJSON() {
+  const data = JSON.stringify(games, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gamevault_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📤 Lista exportada com sucesso!', 'success');
+}
+
+// ==========================================
+// IMPORT JSON
+// ==========================================
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('Formato inválido');
+      games = imported;
+      saveData();
+      updateDashboard();
+      populateGenreFilter();
+      renderGames();
+      showToast(`📥 ${imported.length} jogo(s) importado(s)!`, 'success');
+    } catch(err) {
+      showToast('❌ Arquivo inválido. Use um JSON exportado pelo GameVault.', 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ==========================================
+// KEYBOARD SHORTCUTS
+// ==========================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeModal();
+    closeConfirm();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+    e.preventDefault();
+    openModal();
+  }
+});
+
+// Close modal on backdrop click
+document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modalBackdrop')) closeModal();
+});
+document.getElementById('confirmBackdrop').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('confirmBackdrop')) closeConfirm();
+});
+
+// ==========================================
+// DEMO DATA (only if empty)
+// ==========================================
+function loadDemoData() {
+  if (games.length > 0) return;
+  games = [
+    { id: 1700000001, name: 'Elden Ring', platform: 'PC', genre: 'RPG', status: 'zerado', rating: 10, startDate: '2024-02-25', endDate: '2024-04-10', hours: 120, progress: 100, comment: 'Uma obra-prima absoluta. Mundo incrível, chefões desafiadores. Melhor jogo que já joguei!', favorite: true },
+    { id: 1700000002, name: 'Baldur\'s Gate 3', platform: 'PC', genre: 'RPG', status: 'jogando', rating: 9.5, startDate: '2024-11-01', endDate: '', hours: 85, progress: 65, comment: 'Narrativa brilhante, infinitas possibilidades. Ainda na Ato 2.', favorite: true },
+    { id: 1700000003, name: 'God of War Ragnarök', platform: 'PS5', genre: 'Ação', status: 'zerado', rating: 9.5, startDate: '2024-01-15', endDate: '2024-02-10', hours: 45, progress: 100, comment: 'Épico demais! A história do Kratos e Atreus é de dar arrepios.', favorite: false },
+    { id: 1700000004, name: 'Hollow Knight', platform: 'PC', genre: 'Plataforma', status: 'jogando', rating: 9, startDate: '2024-10-20', endDate: '', hours: 28, progress: 40, comment: 'Arte incrível, atmosfera única. Os chefões são brutais!', favorite: false },
+    { id: 1700000005, name: 'Cyberpunk 2077', platform: 'PC', genre: 'RPG', status: 'zerado', rating: 8.5, startDate: '2023-12-01', endDate: '2024-01-05', hours: 95, progress: 100, comment: 'Depois dos patches ficou excelente. Night City é deslumbrante.', favorite: false },
+    { id: 1700000006, name: 'Zelda: Tears of the Kingdom', platform: 'Nintendo Switch', genre: 'Aventura', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Preciso jogar urgentemente! Ouvi falar maravilhas.', favorite: true },
+    { id: 1700000007, name: 'Spider-Man 2', platform: 'PS5', genre: 'Ação', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Adorei o primeiro. Este deve ser incrível!', favorite: false },
+    { id: 1700000008, name: 'Hades II', platform: 'PC', genre: 'RPG', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Early Access mas já ouço elogios por todo lado.', favorite: false },
+  ];
+  saveData();
+}
+
+// ==========================================
+// START
+// ==========================================
+loadDemoData();
+init();
+</script>
+</body>
+</html>
