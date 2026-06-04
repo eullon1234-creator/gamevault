@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>GameVault — Gerenciador de Jogos</title>
+  <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
   <style>
     /* ===== RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -875,7 +876,11 @@ let currentTab = 'all';
 let editingId = null;
 let ratingTouched = false;
 
-const STORAGE_KEY = 'gamevault_games';
+const db = new Dexie('GameVault');
+db.version(1).stores({
+  games: 'id, name, status, platform, genre, favorite',
+  platforms: '&name, icon'
+});
 
 // Platform emoji map
 const DEFAULT_PLATFORMS = [
@@ -892,44 +897,38 @@ function getPlatformIcon(name) {
 }
 
 // ==========================================
-// STORAGE
+// STORAGE (IndexedDB via Dexie)
 // ==========================================
 function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(games));
+  return db.games.clear().then(() => db.games.bulkAdd(games));
 }
 
 function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    games = raw ? JSON.parse(raw) : [];
-  } catch(e) {
-    games = [];
-  }
+  return db.games.toArray().then(data => { games = data; });
 }
 
 function savePlatforms() {
-  localStorage.setItem('gamevault_platforms', JSON.stringify(platforms));
+  return db.platforms.clear().then(() => db.platforms.bulkAdd(platforms));
 }
 
 function loadPlatforms() {
-  try {
-    const raw = localStorage.getItem('gamevault_platforms');
-    platforms = raw ? JSON.parse(raw) : DEFAULT_PLATFORMS.map(p => ({...p}));
-  } catch(e) {
-    platforms = DEFAULT_PLATFORMS.map(p => ({...p}));
-  }
+  return db.platforms.toArray().then(data => {
+    platforms = data.length > 0 ? data : DEFAULT_PLATFORMS.map(p => ({...p}));
+  });
 }
 
 // ==========================================
 // INIT
 // ==========================================
 function init() {
-  loadPlatforms();
-  loadData();
-  populatePlatformDropdowns();
-  updateDashboard();
-  populateGenreFilter();
-  renderGames();
+  loadPlatforms().then(() => loadData()).then(() => {
+    if (games.length === 0) return loadDemoData();
+  }).then(() => {
+    populatePlatformDropdowns();
+    updateDashboard();
+    populateGenreFilter();
+    renderGames();
+  });
 }
 
 // ==========================================
@@ -1182,12 +1181,13 @@ function addPlatform() {
     showToast('⚠️ Plataforma já existe!', 'warning'); return;
   }
   platforms.push({ name, icon });
-  savePlatforms();
-  populatePlatformDropdowns();
-  renderPlatformList();
-  document.getElementById('newPlatformName').value = '';
-  document.getElementById('newPlatformIcon').value = '';
-  showToast(`✅ "${name}" adicionada!`, 'success');
+  savePlatforms().then(() => {
+    populatePlatformDropdowns();
+    renderPlatformList();
+    document.getElementById('newPlatformName').value = '';
+    document.getElementById('newPlatformIcon').value = '';
+    showToast(`✅ "${name}" adicionada!`, 'success');
+  });
 }
 
 function deletePlatform(index) {
@@ -1197,10 +1197,11 @@ function deletePlatform(index) {
     return;
   }
   platforms.splice(index, 1);
-  savePlatforms();
-  populatePlatformDropdowns();
-  renderPlatformList();
-  showToast(`🗑️ "${p.name}" removida.`, 'info');
+  savePlatforms().then(() => {
+    populatePlatformDropdowns();
+    renderPlatformList();
+    showToast(`🗑️ "${p.name}" removida.`, 'info');
+  });
 }
 
 // ==========================================
@@ -1317,12 +1318,13 @@ function saveGame() {
     games.unshift({ id: Date.now(), name, platform, genre, status, rating, startDate, endDate, hours, progress, link, comment, favorite: false });
   }
 
-  saveData();
-  updateDashboard();
-  populateGenreFilter();
-  renderGames();
-  closeModal();
-  showToast(isNew ? `🎮 "${name}" adicionado!` : `✅ "${name}" atualizado!`, 'success');
+  saveData().then(() => {
+    updateDashboard();
+    populateGenreFilter();
+    renderGames();
+    closeModal();
+    showToast(isNew ? `🎮 "${name}" adicionado!` : `✅ "${name}" atualizado!`, 'success');
+  });
 }
 
 // ==========================================
@@ -1358,17 +1360,19 @@ function deleteGame(id) {
     card.style.opacity = '0';
     setTimeout(() => {
       games = games.filter(x => x.id != id);
-      saveData();
-      updateDashboard();
-      populateGenreFilter();
-      renderGames();
+      saveData().then(() => {
+        updateDashboard();
+        populateGenreFilter();
+        renderGames();
+      });
     }, 300);
   } else {
     games = games.filter(x => x.id != id);
-    saveData();
-    updateDashboard();
-    populateGenreFilter();
-    renderGames();
+    saveData().then(() => {
+      updateDashboard();
+      populateGenreFilter();
+      renderGames();
+    });
   }
   showToast(`🗑️ "${name}" removido.`, 'info');
 }
@@ -1380,10 +1384,11 @@ function toggleFav(id) {
   const g = games.find(x => x.id == id);
   if (!g) return;
   g.favorite = !g.favorite;
-  saveData();
-  updateDashboard();
-  renderGames();
-  showToast(g.favorite ? `⭐ "${g.name}" favoritado!` : `✨ Favorito removido.`, 'info');
+  saveData().then(() => {
+    updateDashboard();
+    renderGames();
+    showToast(g.favorite ? `⭐ "${g.name}" favoritado!` : `✨ Favorito removido.`, 'info');
+  });
 }
 
 // ==========================================
@@ -1408,7 +1413,6 @@ function markComplete(id) {
     updateDashboard();
     renderGames();
     showToast(`🏆 "${g.name}" marcado como Zerado! Parabéns!`, 'success');
-    // Confetti-like visual
     launchConfetti();
   }, 400);
 }
@@ -1487,11 +1491,12 @@ function importJSON(event) {
       const imported = JSON.parse(e.target.result);
       if (!Array.isArray(imported)) throw new Error('Formato inválido');
       games = imported;
-      saveData();
-      updateDashboard();
-      populateGenreFilter();
-      renderGames();
-      showToast(`📥 ${imported.length} jogo(s) importado(s)!`, 'success');
+      saveData().then(() => {
+        updateDashboard();
+        populateGenreFilter();
+        renderGames();
+        showToast(`📥 ${imported.length} jogo(s) importado(s)!`, 'success');
+      });
     } catch(err) {
       showToast('❌ Arquivo inválido. Use um JSON exportado pelo GameVault.', 'error');
     }
@@ -1530,7 +1535,6 @@ document.getElementById('platformModalBackdrop').addEventListener('click', (e) =
 // DEMO DATA (only if empty)
 // ==========================================
 function loadDemoData() {
-  if (games.length > 0) return;
   games = [
     { id: 1700000001, name: 'Elden Ring', platform: 'PC', genre: 'RPG', status: 'zerado', rating: 10, startDate: '2024-02-25', endDate: '2024-04-10', hours: 120, progress: 100, comment: 'Uma obra-prima absoluta. Mundo incrível, chefões desafiadores. Melhor jogo que já joguei!', favorite: true },
     { id: 1700000002, name: 'Baldur\'s Gate 3', platform: 'PC', genre: 'RPG', status: 'jogando', rating: 9.5, startDate: '2024-11-01', endDate: '', hours: 85, progress: 65, comment: 'Narrativa brilhante, infinitas possibilidades. Ainda na Ato 2.', favorite: true },
@@ -1541,13 +1545,12 @@ function loadDemoData() {
     { id: 1700000007, name: 'Spider-Man 2', platform: 'PS5', genre: 'Ação', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Adorei o primeiro. Este deve ser incrível!', favorite: false },
     { id: 1700000008, name: 'Hades II', platform: 'PC', genre: 'RPG', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Early Access mas já ouço elogios por todo lado.', favorite: false },
   ];
-  saveData();
+  return saveData();
 }
 
 // ==========================================
 // START
 // ==========================================
-loadDemoData();
 init();
 </script>
 </body>
