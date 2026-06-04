@@ -18,6 +18,10 @@
   <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230d0d14' width='180' height='180' rx='40'/><text x='90' y='90' font-size='110' fill='%23a855f7' text-anchor='middle' dominant-baseline='middle'>🎮</text></svg>"/>
   <title>GameVault — Gerenciador de Jogos</title>
   <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
   <style>
     /* ===== RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -92,6 +96,12 @@
     }
     .logo span.icon { font-size: 1.6rem; }
     .logo span.brand { background: linear-gradient(135deg, var(--neon), var(--blue2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    #authContainer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
     .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .search-wrap {
       position: relative;
@@ -577,6 +587,7 @@
       header { padding: 0 14px; }
       .header-inner { height: auto; padding: 10px 0; flex-wrap: wrap; }
       .logo { font-size: 1.1rem; }
+      #authContainer { order: 3; width: 100%; margin-top: 8px; }
       #searchInput { width: 160px; }
       #searchInput:focus { width: 180px; }
       .main-wrap { padding: 16px 12px; padding-bottom: 80px; }
@@ -597,6 +608,8 @@
       #searchInput { flex: 1; width: auto; }
       #searchInput:focus { width: auto; }
       .search-wrap { flex: 1; }
+      #authContainer { gap: 4px; }
+      .btn { font-size: .8rem; padding: 8px 10px; }
       .main-wrap { padding: 12px 10px; padding-bottom: 90px; }
       .tabs-row { gap: 2px; }
       .tab-btn { padding: 8px 10px; font-size: .75rem; }
@@ -618,6 +631,8 @@
       .stat-card { padding: 10px; }
       .stat-label { font-size: .7rem; }
       .tab-btn { padding: 6px 8px; font-size: .7rem; }
+      #authContainer { gap: 3px; }
+      .btn { padding: 6px 10px; font-size: .75rem; }
     }
 
     /* ===== TOUCH-FRIENDLY ===== */
@@ -683,6 +698,14 @@
     <div class="logo">
       <span class="icon">🎮</span>
       <span class="brand">GameVault</span>
+    </div>
+    <div id="authContainer" style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn btn-sm btn-primary" onclick="signInWithGoogle()" style="background:linear-gradient(135deg, #4285F4, #34A853);">
+        🔴 Google
+      </button>
+      <button class="btn btn-sm btn-primary" onclick="signInWithGitHub()" style="background:#333;">
+        ⚫ GitHub
+      </button>
     </div>
     <div class="header-actions">
       <div class="search-wrap">
@@ -767,6 +790,8 @@
     </select>
     <div class="toolbar-spacer"></div>
     <div class="io-panel">
+      <button class="btn btn-outline btn-sm" onclick="syncAllDataToFirebase()" title="Sincronizar com Firebase">☁️ Sincronizar</button>
+      <button class="btn btn-outline btn-sm" onclick="downloadBackupFromFirebase()" title="Baixar backup do Firebase">💾 Backup Cloud</button>
       <button class="btn btn-outline btn-sm" onclick="exportJSON()" title="Exportar JSON">📤 Exportar</button>
       <label class="btn btn-outline btn-sm" style="cursor:pointer" title="Importar JSON">
         📥 Importar
@@ -1619,6 +1644,11 @@ function loadDemoData() {
 // ==========================================
 init();
 
+// Inicializar Firebase após tudo estar pronto
+if (window.initFirebase) {
+  initFirebase();
+}
+
 // ==========================================
 // PWA & SERVICE WORKER
 // ==========================================
@@ -1712,3 +1742,4 @@ if (navigator.share) {
 </script>
 </body>
 </html>
+<script src="firebase-config.js"></script>
