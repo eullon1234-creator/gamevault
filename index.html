@@ -914,7 +914,12 @@ function savePlatforms() {
 
 function loadPlatforms() {
   return db.platforms.toArray().then(data => {
-    platforms = data.length > 0 ? data : DEFAULT_PLATFORMS.map(p => ({...p}));
+    if (data.length > 0) {
+      platforms = data;
+    } else {
+      platforms = DEFAULT_PLATFORMS.map(p => ({...p}));
+      return savePlatforms();
+    }
   });
 }
 
