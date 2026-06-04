@@ -928,7 +928,16 @@ function loadPlatforms() {
 // ==========================================
 function init() {
   loadPlatforms().then(() => loadData()).then(() => {
-    if (games.length === 0) return loadDemoData();
+    return db.meta.get('demoLoaded');
+  }).then(flag => {
+    if (!flag) {
+      games = [];
+      return db.games.clear().then(() =>
+        db.meta.put({key: 'demoLoaded', value: true})
+      );
+    }
+  }).catch(() => {
+    games = [];
   }).then(() => {
     populatePlatformDropdowns();
     updateDashboard();
@@ -1541,20 +1550,18 @@ document.getElementById('platformModalBackdrop').addEventListener('click', (e) =
 // DEMO DATA (only if empty)
 // ==========================================
 function loadDemoData() {
-  return db.meta.get('demoLoaded').then(flag => {
-    if (flag) return;
-    games = [
-      { id: 1700000001, name: 'Elden Ring', platform: 'PC', genre: 'RPG', status: 'zerado', rating: 10, startDate: '2024-02-25', endDate: '2024-04-10', hours: 120, progress: 100, comment: 'Uma obra-prima absoluta. Mundo incrível, chefões desafiadores. Melhor jogo que já joguei!', favorite: true },
-      { id: 1700000002, name: 'Baldur\'s Gate 3', platform: 'PC', genre: 'RPG', status: 'jogando', rating: 9.5, startDate: '2024-11-01', endDate: '', hours: 85, progress: 65, comment: 'Narrativa brilhante, infinitas possibilidades. Ainda na Ato 2.', favorite: true },
-      { id: 1700000003, name: 'God of War Ragnarök', platform: 'PS5', genre: 'Ação', status: 'zerado', rating: 9.5, startDate: '2024-01-15', endDate: '2024-02-10', hours: 45, progress: 100, comment: 'Épico demais! A história do Kratos e Atreus é de dar arrepios.', favorite: false },
-      { id: 1700000004, name: 'Hollow Knight', platform: 'PC', genre: 'Plataforma', status: 'jogando', rating: 9, startDate: '2024-10-20', endDate: '', hours: 28, progress: 40, comment: 'Arte incrível, atmosfera única. Os chefões são brutais!', favorite: false },
-      { id: 1700000005, name: 'Cyberpunk 2077', platform: 'PC', genre: 'RPG', status: 'zerado', rating: 8.5, startDate: '2023-12-01', endDate: '2024-01-05', hours: 95, progress: 100, comment: 'Depois dos patches ficou excelente. Night City é deslumbrante.', favorite: false },
-      { id: 1700000006, name: 'Zelda: Tears of the Kingdom', platform: 'Nintendo Switch', genre: 'Aventura', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Preciso jogar urgentemente! Ouvi falar maravilhas.', favorite: true },
-      { id: 1700000007, name: 'Spider-Man 2', platform: 'PS5', genre: 'Ação', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Adorei o primeiro. Este deve ser incrível!', favorite: false },
-      { id: 1700000008, name: 'Hades II', platform: 'PC', genre: 'RPG', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Early Access mas já ouço elogios por todo lado.', favorite: false },
-    ];
-    return saveData().then(() => db.meta.put({key: 'demoLoaded', value: true}));
-  });
+  if (games.length > 0) return;
+  games = [
+    { id: 1700000001, name: 'Elden Ring', platform: 'PC', genre: 'RPG', status: 'zerado', rating: 10, startDate: '2024-02-25', endDate: '2024-04-10', hours: 120, progress: 100, comment: 'Uma obra-prima absoluta. Mundo incrível, chefões desafiadores. Melhor jogo que já joguei!', favorite: true },
+    { id: 1700000002, name: 'Baldur\'s Gate 3', platform: 'PC', genre: 'RPG', status: 'jogando', rating: 9.5, startDate: '2024-11-01', endDate: '', hours: 85, progress: 65, comment: 'Narrativa brilhante, infinitas possibilidades. Ainda na Ato 2.', favorite: true },
+    { id: 1700000003, name: 'God of War Ragnarök', platform: 'PS5', genre: 'Ação', status: 'zerado', rating: 9.5, startDate: '2024-01-15', endDate: '2024-02-10', hours: 45, progress: 100, comment: 'Épico demais! A história do Kratos e Atreus é de dar arrepios.', favorite: false },
+    { id: 1700000004, name: 'Hollow Knight', platform: 'PC', genre: 'Plataforma', status: 'jogando', rating: 9, startDate: '2024-10-20', endDate: '', hours: 28, progress: 40, comment: 'Arte incrível, atmosfera única. Os chefões são brutais!', favorite: false },
+    { id: 1700000005, name: 'Cyberpunk 2077', platform: 'PC', genre: 'RPG', status: 'zerado', rating: 8.5, startDate: '2023-12-01', endDate: '2024-01-05', hours: 95, progress: 100, comment: 'Depois dos patches ficou excelente. Night City é deslumbrante.', favorite: false },
+    { id: 1700000006, name: 'Zelda: Tears of the Kingdom', platform: 'Nintendo Switch', genre: 'Aventura', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Preciso jogar urgentemente! Ouvi falar maravilhas.', favorite: true },
+    { id: 1700000007, name: 'Spider-Man 2', platform: 'PS5', genre: 'Ação', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Adorei o primeiro. Este deve ser incrível!', favorite: false },
+    { id: 1700000008, name: 'Hades II', platform: 'PC', genre: 'RPG', status: 'lista', rating: 0, startDate: '', endDate: '', hours: 0, progress: 0, comment: 'Early Access mas já ouço elogios por todo lado.', favorite: false },
+  ];
+  return saveData();
 }
 
 // ==========================================
