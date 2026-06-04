@@ -2,7 +2,20 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"/>
+  <meta name="description" content="Gerenciador de coleção de jogos com rastreamento de progresso, horas jogadas e avaliações. Funciona offline!"/>
+  <meta name="theme-color" content="#0d0d14"/>
+  <meta name="color-scheme" content="dark"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="GameVault"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="msapplication-TileColor" content="#0d0d14"/>
+  <meta name="msapplication-TileImage" content="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 144 144'><rect fill='%230d0d14' width='144' height='144'/><text x='72' y='72' font-size='90' fill='%23a855f7' text-anchor='middle' dominant-baseline='middle'>🎮</text></svg>"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><text x='32' y='32' font-size='40' text-anchor='middle' dominant-baseline='middle'>🎮</text></svg>"/>
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%230d0d14' width='180' height='180' rx='40'/><text x='90' y='90' font-size='110' fill='%23a855f7' text-anchor='middle' dominant-baseline='middle'>🎮</text></svg>"/>
   <title>GameVault — Gerenciador de Jogos</title>
   <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
   <style>
@@ -566,15 +579,17 @@
       .logo { font-size: 1.1rem; }
       #searchInput { width: 160px; }
       #searchInput:focus { width: 180px; }
-      .main-wrap { padding: 16px 12px; }
+      .main-wrap { padding: 16px 12px; padding-bottom: 80px; }
       .dashboard { grid-template-columns: repeat(2, 1fr); gap: 10px; }
       .stat-card { padding: 14px; }
       .stat-value { font-size: 1.4rem; }
       .games-grid { grid-template-columns: 1fr; gap: 12px; }
       .form-row { grid-template-columns: 1fr; }
       .modal { border-radius: 12px; }
-      .btn { padding: 7px 12px; font-size: .82rem; }
+      .btn { padding: 10px 14px; font-size: .85rem; min-height: 44px; }
       .tab-btn { padding: 10px 14px; font-size: .83rem; }
+      .card-actions button { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+      .fav-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
     }
     @media (max-width: 480px) {
       .dashboard { grid-template-columns: 1fr 1fr; }
@@ -582,6 +597,39 @@
       #searchInput { flex: 1; width: auto; }
       #searchInput:focus { width: auto; }
       .search-wrap { flex: 1; }
+      .main-wrap { padding: 12px 10px; padding-bottom: 90px; }
+      .tabs-row { gap: 2px; }
+      .tab-btn { padding: 8px 10px; font-size: .75rem; }
+      .game-card { padding: 16px; }
+      .card-title { font-size: .95rem; }
+      .card-footer { flex-wrap: wrap-reverse; }
+      .complete-btn { flex: 1; min-height: 40px; }
+      .btn { min-height: 44px; padding: 10px 12px; }
+      .modal { max-width: 95vw; }
+      .modal-header { padding: 16px 16px 0; }
+      .modal-body { padding: 16px; }
+      .modal-footer { padding: 0 16px 16px; flex-direction: column-reverse; gap: 8px; }
+      .modal-footer .btn { width: 100%; }
+      .form-control { font-size: 16px; }
+    }
+    @media (max-width: 360px) {
+      .main-wrap { padding: 10px 8px; }
+      .dashboard { grid-template-columns: 1fr; gap: 8px; }
+      .stat-card { padding: 10px; }
+      .stat-label { font-size: .7rem; }
+      .tab-btn { padding: 6px 8px; font-size: .7rem; }
+    }
+
+    /* ===== TOUCH-FRIENDLY ===== */
+    button, a, input[type="button"], input[type="submit"] {
+      -webkit-tap-highlight-color: rgba(168, 85, 247, 0.2);
+      touch-action: manipulation;
+    }
+
+    /* ===== SAFE AREA (notch support) ===== */
+    @supports (padding: max(0px)) {
+      header { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+      .main-wrap { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); padding-bottom: max(80px, calc(80px + env(safe-area-inset-bottom))); }
     }
 
     /* ===== FAVORITE STAR ===== */
@@ -1106,6 +1154,8 @@ function buildCard(g) {
 
   const linkHtml = g.link ? `<a href="${escHtml(g.link)}" target="_blank" rel="noopener" class="card-link" title="${escHtml(g.link)}">🔗 Link</a>` : '';
 
+  const commentHtml = g.comment ? `<div class="card-comment">💬 ${escHtml(g.comment)}</div>` : '';
+
   const completeBtn = g.status !== 'zerado'
     ? `<button class="complete-btn" onclick="markComplete('${g.id}')">✅ Marcar como Zerado</button>`
     : '';
@@ -1568,6 +1618,97 @@ function loadDemoData() {
 // START
 // ==========================================
 init();
+
+// ==========================================
+// PWA & SERVICE WORKER
+// ==========================================
+
+// Registrar Service Worker para offline
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js', { scope: './' })
+      .then(reg => {
+        console.log('✅ Service Worker registrado:', reg.scope);
+        
+        // Verificar updates a cada 30s
+        setInterval(() => reg.update(), 30000);
+      })
+      .catch(err => console.log('⚠️ SW registration failed:', err));
+  });
+
+  // Update checker
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // SW atualizado, recarregar silenciosamente
+    console.log('🔄 Novo SW ativado');
+  });
+}
+
+// Suporte de instalação (Install prompt)
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  showInstallPrompt();
+});
+
+function showInstallPrompt() {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast toast-info';
+  toast.style.cssText = 'max-width:280px;cursor:pointer;';
+  toast.innerHTML = `
+    <span class="toast-icon">📱</span>
+    <div style="flex:1">
+      <div style="font-weight:600;margin-bottom:4px">Instalar GameVault?</div>
+      <div style="font-size:.8rem;opacity:.8">Jogar offline, como um app nativo</div>
+    </div>
+  `;
+  
+  toast.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast('🎉 GameVault instalado com sucesso!', 'success');
+      }
+      deferredPrompt = null;
+      toast.remove();
+    }
+  });
+
+  container.appendChild(toast);
+  
+  // Auto-remover após 8s
+  setTimeout(() => {
+    toast.classList.add('removing');
+    toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  }, 8000);
+}
+
+// Detectar online/offline
+window.addEventListener('online', () => {
+  showToast('🌐 Conectado! Sincronizando dados...', 'info');
+});
+
+window.addEventListener('offline', () => {
+  showToast('📴 Modo offline ativado. Seus dados estão salvos!', 'warning');
+});
+
+// Check initial state
+if (!navigator.onLine) {
+  showToast('📴 Você está offline. Dados salvos no dispositivo.', 'info');
+}
+
+// Share API (se suportada)
+if (navigator.share) {
+  window.shareGame = function(gameName) {
+    navigator.share({
+      title: 'GameVault',
+      text: `Estou jogando "${gameName}" no GameVault! 🎮`,
+      url: window.location.href
+    }).catch(err => console.log('Share error:', err));
+  };
+}
 </script>
 </body>
 </html>
